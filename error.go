@@ -12,6 +12,8 @@ const (
 	InvalidSectionTypeConvert = "InvalidSectionTypeConvert"
 	Section2Entity            = "Section2Entity"
 
+	ArrayOutOfRange = "ArrayOutOfRange"
+
 	UnmarshalFail = "UnmarshalFail"
 	SetValueFail  = "SetValueFail"
 
@@ -53,6 +55,16 @@ type ErrorSection2Entity struct {
 
 func (e ErrorSection2Entity) Error() string {
 	return fmt.Sprintf("ErrorCode[%s] SectionType[%s] ConvertEntity[%s]", Section2Entity, e.SectionType.String(), e.ConvertEntity)
+}
+
+type ErrorArrayOutOfRange struct {
+	ArrayKey     string
+	MaxMember    int
+	InvalidIndex int
+}
+
+func (e ErrorArrayOutOfRange) Error() string {
+	return fmt.Sprintf("ErrorCode[%s] MaxMember[%d] InvalidIndex[%d]", ArrayOutOfRange, e.MaxMember, e.InvalidIndex)
 }
 
 type ErrorUnmarshalFail struct {

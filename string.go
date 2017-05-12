@@ -44,9 +44,7 @@ func (sec *StringSection) Unmarshal(data interface{}) error {
 	}
 
 	rv := dataVal.Elem()
-	sec.setValue(&rv)
-
-	return nil
+	return sec.setValue(&rv)
 }
 
 func (sec *StringSection) setValue(rv *reflect.Value) error {

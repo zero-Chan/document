@@ -100,7 +100,7 @@ func TestStringSection(t *testing.T) {
 
 	// other type can not convert marshal to stringSection
 	var i int = 10
-	sec.Marshal(&i)
+	err = sec.Marshal(&i)
 	if err == nil {
 		t.Errorf("sec.Marshal(%T) OK: type[int] can convert to stringSection", contain)
 		t.FailNow()

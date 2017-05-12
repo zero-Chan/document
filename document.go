@@ -134,7 +134,7 @@ func (doc Document) IsInt64() bool {
 	return true
 }
 
-func (doc Document) InFloat32() bool {
+func (doc Document) IsFloat32() bool {
 	if doc.entity.Type() != Float32 {
 		return false
 	}
@@ -234,12 +234,25 @@ func (doc *Document) Array() (*ArraySection, error) {
 
 func (doc *Document) Bool() (*BoolSection, error) {
 	if !doc.IsBool() {
-		return nil, ErrorInvalidSectionTypeConvert{ErrorType: doc.Type(), Type: Array}
+		return nil, ErrorInvalidSectionTypeConvert{ErrorType: doc.Type(), Type: Bool}
 	}
 
 	sec, ok := doc.entity.(*BoolSection)
 	if !ok {
 		return nil, ErrorSection2Entity{SectionType: doc.Type(), ConvertEntity: "*BoolSection"}
+	}
+
+	return sec, nil
+}
+
+func (doc *Document) Nil() (*NilSection, error) {
+	if !doc.IsNil() {
+		return nil, ErrorInvalidSectionTypeConvert{ErrorType: doc.Type(), Type: Nil}
+	}
+
+	sec, ok := doc.entity.(*NilSection)
+	if !ok {
+		return nil, ErrorSection2Entity{SectionType: doc.Type(), ConvertEntity: "*NilSection"}
 	}
 
 	return sec, nil

@@ -53,12 +53,19 @@ func (sec *ObjectSection) At(key string) (*Document, error) {
 	return v, nil
 }
 
-func (sec *ObjectSection) Set(key string, doc *Document) error {
+func (sec *ObjectSection) Set(key string, data Section) {
+	if data == nil {
+		data = NewNIlSection(key)
+	}
+
+	sec.data[key] = NewDocument(data)
+}
+
+func (sec *ObjectSection) SetDoc(key string, doc *Document) {
 	if doc == nil {
-		return ErrorAcceptNilParam{FunctionName: "ObjectSection.Set", NilParam: doc}
+		doc = NewDocument(NewNIlSection(key))
 	}
 	sec.data[key] = doc
-	return nil
 }
 
 func (o *ObjectSection) Object(key string) (*ObjectSection, error) {
@@ -303,6 +310,10 @@ func (sec *ObjectSection) SetBool(key string, val bool) {
 	sec.data[key] = NewDocument(NewBoolSection(key, val))
 }
 
+func (sec *ObjectSection) SetNil(key string) {
+	sec.data[key] = NewDocument(NewNIlSection(key))
+}
+
 func (sec *ObjectSection) Unmarshal(data interface{}) error {
 	dataVal := reflect.ValueOf(data)
 	if dataVal.IsNil() || dataVal.Kind() != reflect.Ptr {
@@ -310,15 +321,28 @@ func (sec *ObjectSection) Unmarshal(data interface{}) error {
 	}
 
 	rv := dataVal.Elem()
+	return sec.setValue(&rv)
+}
+
+func (sec *ObjectSection) setValue(rv *reflect.Value) error {
+	if rv == nil {
+		return ErrorAcceptNilParam{FunctionName: "ObjectSection.setValue", NilParam: rv}
+	}
+
+	if !rv.CanSet() {
+		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
+	}
 
 	switch rv.Kind() {
 	case reflect.Struct:
-		return sec.setStructValue(&rv)
+		return sec.setStructValue(rv)
 	case reflect.Map:
-		return sec.setMapValue(&rv)
+		return sec.setMapValue(rv)
 	default:
-		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: rv}
+		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 	}
+
+	return nil
 }
 
 func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
@@ -326,7 +350,7 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 		return ErrorAcceptNilParam{FunctionName: "ObjectSection.setStructValue", NilParam: rv}
 	}
 
-	if !rv.CanSet() {
+	if !rv.CanSet() || rv.Kind() != reflect.Struct {
 		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 	}
 
@@ -351,8 +375,18 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 			continue
 		}
 
-		switch doc.Type() {
-		case String:
+		switch {
+		case doc.IsObject():
+			objSec, err := doc.Object()
+			if err != nil {
+				return err
+			}
+
+			if err = objSec.setValue(&vf); err != nil {
+				return err
+			}
+
+		case doc.IsString():
 			strSec, err := doc.String()
 			if err != nil {
 				return err
@@ -362,7 +396,7 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 				return err
 			}
 
-		case Int:
+		case doc.IsNumber():
 			numSec, err := doc.Number()
 			if err != nil {
 				return err
@@ -372,8 +406,35 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 				return err
 			}
 
-			// TODO
+		case doc.IsArray():
+			arrSec, err := doc.Array()
+			if err != nil {
+				return err
+			}
 
+			if err = arrSec.setValue(&vf); err != nil {
+				return err
+			}
+
+		case doc.IsBool():
+			bSec, err := doc.Bool()
+			if err != nil {
+				return err
+			}
+
+			if err = bSec.setValue(&vf); err != nil {
+				return err
+			}
+
+		case doc.IsNil():
+			nSec, err := doc.Nil()
+			if err != nil {
+				return err
+			}
+
+			if err = nSec.setValue(&vf); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -382,10 +443,10 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 
 func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 	if rv == nil {
-		return ErrorAcceptNilParam{FunctionName: "ObjectSection.setStructValue", NilParam: rv}
+		return ErrorAcceptNilParam{FunctionName: "ObjectSection.setMapValue", NilParam: rv}
 	}
 
-	if !rv.CanSet() {
+	if !rv.CanSet() || rv.Kind() != reflect.Map {
 		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 	}
 
@@ -477,22 +538,13 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			}
 			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(arr))
 
-			// TODO : case
+		case Nil:
+			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(nil))
+
+		default:
+			return ErrorSetValueFail{Type: doc.Type(), KeyName: sec.name, Value: *rv}
 		}
 	}
-
-	return nil
-}
-
-func (sec *ObjectSection) set(key string, doc *Document, rv *reflect.Value) error {
-	//	switch doc.Type() {
-	//	case String:
-	//		d, err := sec.String()
-	//		if err != nil {
-	//			return err
-	//		}
-
-	//	}
 
 	return nil
 }
@@ -523,6 +575,32 @@ func (sec *ObjectSection) getValue(rv reflect.Value) error {
 }
 
 func (sec *ObjectSection) getStructValue(rv reflect.Value) error {
+	if rv.Kind() != reflect.Struct {
+		return ErrorGetValueFail{Type: Object, InvalidKind: rv.Kind(), ValidKind: reflect.Struct}
+	}
+
+	rt := rv.Type()
+	n := rt.NumField()
+
+	for idx := 0; idx < n; idx++ {
+		vf := rv.Field(idx)
+		tf := rt.Field(idx)
+
+		tag := tf.Tag.Get("document")
+		// if tag empty or "-" ignore
+		if tag == "-" || tag == "omitempty" {
+			continue
+		}
+
+		if len(tag) == 0 {
+			tag = tf.Name
+		}
+
+		if err := sec.get(tag, vf); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -587,8 +665,17 @@ func (sec *ObjectSection) get(key string, rv reflect.Value) error {
 		sec.SetBool(key, rv.Bool())
 
 	case reflect.Array:
-		//		arr := NewArraySection(key)
-		// arr.setValue
+		arr := NewArraySection(key)
+		if err := arr.getValue(rv); err != nil {
+			return err
+		}
+		sec.SetArray(key, arr)
+
+	case reflect.Invalid:
+		sec.SetNil(key)
+
+	default:
+		return ErrorGetValueFail{Type: Object, InvalidKind: rv.Kind(), ValidKind: reflect.Interface}
 	}
 
 	return nil
