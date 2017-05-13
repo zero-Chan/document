@@ -1,4 +1,4 @@
-package document
+package godoc
 
 import (
 	"reflect"
@@ -30,6 +30,10 @@ func (sec NilSection) Name() string {
 	return sec.name
 }
 
+func (sec *NilSection) SetName(name string) {
+	sec.name = name
+}
+
 func (sec *NilSection) Unmarshal(data interface{}) error {
 	dataVal := reflect.ValueOf(data)
 	if dataVal.Kind() != reflect.Ptr || dataVal.IsNil() {
@@ -49,13 +53,14 @@ func (sec *NilSection) setValue(rv *reflect.Value) error {
 		return ErrorSetValueFail{Type: Nil, KeyName: sec.name, Value: *rv}
 	}
 
+	var v *int = nil
 	switch rv.Kind() {
 	case reflect.Interface:
-		rv.Set(reflect.ValueOf(sec.data))
+		rv.Set(reflect.ValueOf(v))
 	case reflect.Invalid:
-		rv.Set(reflect.ValueOf(sec.data))
+		rv.Set(reflect.ValueOf(v))
 	case reflect.Ptr:
-		rv.Set(reflect.ValueOf(&sec.data))
+		rv.Set(reflect.ValueOf(v))
 	default:
 		return ErrorSetValueFail{Type: Nil, KeyName: sec.name, Value: *rv}
 	}

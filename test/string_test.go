@@ -3,12 +3,12 @@ package test
 import (
 	"testing"
 
-	"github.com/zero-Chan/document"
+	"github.com/zero-Chan/godoc"
 )
 
 func TestStringSection(t *testing.T) {
 	// string
-	sec := document.NewStringSection("Key", "Val_1")
+	sec := godoc.NewStringSection("Key", "Val_1")
 	var buf string
 	err := sec.Unmarshal(&buf)
 	if err != nil {

@@ -1,4 +1,4 @@
-package document
+package godoc
 
 import (
 	"fmt"
@@ -24,12 +24,20 @@ func NewObjectSection(name string) *ObjectSection {
 	return &s
 }
 
+func (sec ObjectSection) Name() string {
+	return sec.name
+}
+
+func (sec *ObjectSection) SetName(name string) {
+	sec.name = name
+}
+
 func (o ObjectSection) Type() Type {
 	return Object
 }
 
-func (o *ObjectSection) Clear() {
-	o.data = make(map[string]*Document)
+func (sec *ObjectSection) Clear() {
+	sec.data = make(map[string]*Document)
 }
 
 func (sec *ObjectSection) Keys() []string {
@@ -59,6 +67,7 @@ func (sec *ObjectSection) Set(key string, data Section) {
 	}
 
 	sec.data[key] = NewDocument(data)
+	data.SetName(key)
 }
 
 func (sec *ObjectSection) SetDoc(key string, doc *Document) {
@@ -66,12 +75,13 @@ func (sec *ObjectSection) SetDoc(key string, doc *Document) {
 		doc = NewDocument(NewNIlSection(key))
 	}
 	sec.data[key] = doc
+	doc.entity.SetName(key)
 }
 
-func (o *ObjectSection) Object(key string) (*ObjectSection, error) {
-	v, exist := o.data[key]
+func (sec *ObjectSection) Object(key string) (*ObjectSection, error) {
+	v, exist := sec.data[key]
 	if !exist {
-		return nil, ErrorObjectNotExistKey{ObjectKey: o.name, Key: key}
+		return nil, ErrorObjectNotExistKey{ObjectKey: sec.name, Key: key}
 	}
 
 	if v == nil {
@@ -86,8 +96,9 @@ func (o *ObjectSection) Object(key string) (*ObjectSection, error) {
 	return objSec, nil
 }
 
-func (o *ObjectSection) SetObject(key string, val *ObjectSection) {
-	o.data[key] = NewDocument(val)
+func (sec *ObjectSection) SetObject(key string, val *ObjectSection) {
+	sec.data[key] = NewDocument(val)
+	val.SetName(key)
 }
 
 func (o *ObjectSection) Int(key string) (int, error) {
@@ -285,7 +296,8 @@ func (sec *ObjectSection) Array(key string) (*ArraySection, error) {
 }
 
 func (sec *ObjectSection) SetArray(key string, val *ArraySection) {
-	sec.data[key] = NewDocument(NewArraySection(key))
+	sec.data[key] = NewDocument(val)
+	val.SetName(key)
 }
 
 func (sec *ObjectSection) Bool(key string) (bool, error) {
@@ -504,6 +516,7 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			if err != nil {
 				return err
 			}
+
 			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Float64:
@@ -539,7 +552,8 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(arr))
 
 		case Nil:
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(nil))
+			var v *bool = nil
+			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(v))
 
 		default:
 			return ErrorSetValueFail{Type: doc.Type(), KeyName: sec.name, Value: *rv}

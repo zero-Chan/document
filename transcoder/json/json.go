@@ -1,11 +1,11 @@
-package json
+package transcoder
 
 import (
 	"encoding/json"
 	"fmt"
 	"reflect"
 
-	"github.com/zero-Chan/document"
+	"github.com/zero-Chan/godoc"
 )
 
 type JsonTransCoder struct {
@@ -31,7 +31,7 @@ func NewJsonTransCoder() *JsonTransCoder {
 // Unmarshal: make []byte -> doc
 // []byte -> interface{} 		[ json.unmarshal ]
 // interface{} -> doc	[ doc.marshal ]
-func (coder *JsonTransCoder) Unmarshal(data []byte, v interface{}) (*document.Document, error) {
+func (coder *JsonTransCoder) Unmarshal(data []byte, v interface{}) (*godoc.Document, error) {
 	err := json.Unmarshal(data, v)
 	if err != nil {
 		return nil, err
@@ -45,61 +45,61 @@ func (coder *JsonTransCoder) Unmarshal(data []byte, v interface{}) (*document.Do
 	vv := rv.Elem()
 	switch vv.Kind() {
 	case reflect.Map:
-		objSec := document.NewObjectSection("")
+		objSec := godoc.NewObjectSection("")
 		err := objSec.Marshal(vv.Interface())
 		if err != nil {
 			return nil, err
 		}
 
-		return document.NewDocument(objSec), nil
+		return godoc.NewDocument(objSec), nil
 
 	case reflect.Struct:
-		objSec := document.NewObjectSection("")
+		objSec := godoc.NewObjectSection("")
 		err := objSec.Marshal(vv.Interface())
 		if err != nil {
 			return nil, err
 		}
 
-		return document.NewDocument(objSec), nil
+		return godoc.NewDocument(objSec), nil
 
 	case reflect.Array:
-		arrSec := document.NewArraySection("")
+		arrSec := godoc.NewArraySection("")
 		err := arrSec.Marshal(vv.Interface())
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.String:
-		strSec := document.NewStringSection("", vv.String())
+		strSec := godoc.NewStringSection("", vv.String())
 		err := strSec.Marshal(vv.String())
 		if err != nil {
 			return nil, err
 		}
-		return document.NewDocument(strSec), nil
+		return godoc.NewDocument(strSec), nil
 
 	case reflect.Bool:
-		bSec := document.NewBoolSection("", vv.Bool())
+		bSec := godoc.NewBoolSection("", vv.Bool())
 		err := bSec.Marshal(vv.Bool())
 		if err != nil {
 			return nil, err
 		}
-		return document.NewDocument(bSec), nil
+		return godoc.NewDocument(bSec), nil
 
 	default:
 		return nil, fmt.Errorf("JsonTranCoder not support Unmarshal type[%s]", rv.Kind().String())
 	}
 
-	return document.NewDocument(document.NewNIlSection("")), nil
+	return godoc.NewDocument(godoc.NewNIlSection("")), nil
 }
 
 // Marshal: make doc to json format string
 // doc -> interface{}	[ doc.unmarshal ]
 // interface{} -> []byte	 [ json.marshal ]
-func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
+func (coder *JsonTransCoder) Marshal(doc godoc.Document) ([]byte, error) {
 	var v interface{}
 
 	switch doc.Type() {
-	case document.Object:
+	case godoc.Object:
 		objSec, err := doc.Object()
 		if err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = mapv
 
-	case document.Array:
+	case godoc.Array:
 		arrSec, err := doc.Array()
 		if err != nil {
 			return nil, err
@@ -125,7 +125,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = arrv
 
-	case document.String:
+	case godoc.String:
 		strSec, err := doc.String()
 		if err != nil {
 			return nil, err
@@ -138,7 +138,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = strv
 
-	case document.Bool:
+	case godoc.Bool:
 		bSec, err := doc.Bool()
 		if err != nil {
 			return nil, err
@@ -151,7 +151,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = boolv
 
-	case document.Nil:
+	case godoc.Nil:
 		nilSec, err := doc.Nil()
 		if err != nil {
 			return nil, err
@@ -164,7 +164,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = nilv
 
-	case document.Int:
+	case godoc.Int:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -177,7 +177,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = intv
 
-	case document.Int8:
+	case godoc.Int8:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -189,7 +189,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = int8v
 
-	case document.Int16:
+	case godoc.Int16:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -202,7 +202,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = int16v
 
-	case document.Int32:
+	case godoc.Int32:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -215,7 +215,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = int32v
 
-	case document.Int64:
+	case godoc.Int64:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -228,7 +228,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = int64v
 
-	case document.Float32:
+	case godoc.Float32:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err
@@ -241,7 +241,7 @@ func (coder *JsonTransCoder) Marshal(doc document.Document) ([]byte, error) {
 
 		v = float32v
 
-	case document.Float64:
+	case godoc.Float64:
 		numSec, err := doc.Number()
 		if err != nil {
 			return nil, err

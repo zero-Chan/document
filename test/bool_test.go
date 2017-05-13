@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/zero-Chan/document"
+	"github.com/zero-Chan/godoc"
 )
 
 func TestBoolSection(t *testing.T) {

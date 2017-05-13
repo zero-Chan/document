@@ -1,4 +1,4 @@
-package document
+package godoc
 
 import (
 	"reflect"
@@ -28,6 +28,10 @@ func (sec BoolSection) Type() Type {
 
 func (sec BoolSection) Name() string {
 	return sec.name
+}
+
+func (sec *BoolSection) SetName(name string) {
+	sec.name = name
 }
 
 func (sec BoolSection) Bool() bool {

@@ -1,8 +1,6 @@
-package document
+package godoc
 
 import (
-	//	"fmt"
-
 	"reflect"
 )
 
@@ -30,6 +28,10 @@ func (sec ArraySection) Type() Type {
 
 func (sec ArraySection) Name() string {
 	return sec.name
+}
+
+func (sec *ArraySection) SetName(name string) {
+	sec.name = name
 }
 
 func (sec ArraySection) Len() int {

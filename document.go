@@ -1,4 +1,4 @@
-package document
+package godoc
 
 type Type int
 
@@ -36,10 +36,19 @@ const (
 	Int64
 	Float32
 	Float64
+	Uint
+	Uint8
+	Uint16
+	Uint32
+	Uint64
 )
 
 type Section interface {
 	Type() Type
+	SetName(string)
+	Name() string
+	Unmarshal(data interface{}) error
+	Marshal(data interface{}) error
 }
 
 type Document struct {
@@ -67,6 +76,10 @@ func (doc Document) Type() Type {
 	return doc.entity.Type()
 }
 
+func (doc Document) Name() string {
+	return doc.entity.Name()
+}
+
 func (doc Document) IsObject() bool {
 	if doc.entity.Type() != Object {
 		return false
@@ -91,6 +104,16 @@ func (doc Document) IsNumber() bool {
 	case Float32:
 		fallthrough
 	case Float64:
+		fallthrough
+	case Uint:
+		fallthrough
+	case Uint8:
+		fallthrough
+	case Uint16:
+		fallthrough
+	case Uint32:
+		fallthrough
+	case Uint64:
 		ok = true
 	default:
 		ok = false
@@ -143,6 +166,41 @@ func (doc Document) IsFloat32() bool {
 
 func (doc Document) IsFloat64() bool {
 	if doc.entity.Type() != Float64 {
+		return false
+	}
+	return true
+}
+
+func (doc Document) IsUint() bool {
+	if doc.entity.Type() != Uint {
+		return false
+	}
+	return true
+}
+
+func (doc Document) IsUint8() bool {
+	if doc.entity.Type() != Uint8 {
+		return false
+	}
+	return true
+}
+
+func (doc Document) IsUint16() bool {
+	if doc.entity.Type() != Uint16 {
+		return false
+	}
+	return true
+}
+
+func (doc Document) IsUint32() bool {
+	if doc.entity.Type() != Uint32 {
+		return false
+	}
+	return true
+}
+
+func (doc Document) IsUint64() bool {
+	if doc.entity.Type() != Uint64 {
 		return false
 	}
 	return true
