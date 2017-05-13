@@ -25,7 +25,6 @@ touch test.go
 
 Coding
 ```go
-func ExampleNewObject() *godoc.ObjectSection {
 package main
 
 import (
