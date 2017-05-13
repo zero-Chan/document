@@ -1,7 +1,7 @@
 godoc
 ==============
-godoc 是用于数据存储的中间件
-godoc/transcoder 用于各种协议到godoc的转换
+- godoc 是用于数据存储的中间件
+- godoc/transcoder 用于各种协议到godoc的编解码
 
 ## Support Type
  * Object: for go map[string]inerface{}
@@ -68,7 +68,6 @@ func main() {
 	}
 
 	fmt.Println(string(buf))
-}
 }
 ```
 
