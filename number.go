@@ -1,7 +1,6 @@
 package godoc
 
 import (
-	//	"fmt"
 	"reflect"
 )
 

@@ -6,7 +6,7 @@ import (
 
 type NilSection struct {
 	name string
-	data interface{}
+	data *int
 }
 
 func CreateNilSection(name string) NilSection {

@@ -256,6 +256,7 @@ func (sec *ObjectSection) SetFloat64(key string, val float64) {
 }
 
 func (sec *ObjectSection) String(key string) (string, error) {
+
 	v, exist := sec.data[key]
 	if !exist {
 		return "", ErrorObjectNotExistKey{ObjectKey: sec.name, Key: key}
@@ -327,6 +328,10 @@ func (sec *ObjectSection) SetNil(key string) {
 }
 
 func (sec *ObjectSection) Unmarshal(data interface{}) error {
+	if data == nil {
+		return ErrorAcceptNilParam{FunctionName: "ObjectSection.Unmarshal", NilParam: data}
+	}
+
 	dataVal := reflect.ValueOf(data)
 	if dataVal.IsNil() || dataVal.Kind() != reflect.Ptr {
 		return ErrorUnmarshalFail{Type: Object, Value: dataVal}
@@ -552,7 +557,7 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(arr))
 
 		case Nil:
-			var v *bool = nil
+			var v *int = nil
 			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(v))
 
 		default:
@@ -564,6 +569,10 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 }
 
 func (sec *ObjectSection) Marshal(data interface{}) error {
+	if data == nil {
+		return ErrorAcceptNilParam{FunctionName: "ObjectSection.Marshal", NilParam: data}
+	}
+
 	dataVal := reflect.ValueOf(data)
 	if dataVal.IsNil() {
 		return ErrorAcceptNilParam{FunctionName: "ObjectSection.Marshal", NilParam: data}
@@ -576,11 +585,10 @@ func (sec *ObjectSection) getValue(rv reflect.Value) error {
 	switch rv.Kind() {
 	case reflect.Ptr:
 		return sec.getValue(rv.Elem())
-
 	case reflect.Map:
-		sec.getMapValue(rv)
+		return sec.getMapValue(rv)
 	case reflect.Struct:
-		sec.getStructValue(rv)
+		return sec.getStructValue(rv)
 	default:
 		return ErrorMarshalFail{Type: Object, InvalidKind: rv.Kind(), ValidKind: reflect.Map}
 	}
@@ -623,7 +631,8 @@ func (sec *ObjectSection) getMapValue(rv reflect.Value) error {
 		return ErrorGetValueFail{Type: Object, InvalidKind: rv.Kind(), ValidKind: reflect.Map}
 	}
 
-	for _, keyv := range rv.MapKeys() {
+	keys := rv.MapKeys()
+	for _, keyv := range keys {
 		if keyv.Kind() != reflect.String {
 			return fmt.Errorf("Please marshal from map[string]XXX format. invalidKeyType: %s", keyv.Kind().String())
 		}
@@ -679,6 +688,8 @@ func (sec *ObjectSection) get(key string, rv reflect.Value) error {
 		sec.SetBool(key, rv.Bool())
 
 	case reflect.Array:
+		fallthrough
+	case reflect.Slice:
 		arr := NewArraySection(key)
 		if err := arr.getValue(rv); err != nil {
 			return err
