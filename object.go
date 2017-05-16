@@ -48,6 +48,15 @@ func (sec *ObjectSection) Keys() []string {
 	return keys
 }
 
+func (sec *ObjectSection) Copy() *ObjectSection {
+	os := NewObjectSection(sec.name)
+	for key, doc := range sec.data {
+		os.SetDoc(key, doc.Copy())
+	}
+
+	return os
+}
+
 func (sec *ObjectSection) At(key string) (*Document, error) {
 	v, exist := sec.data[key]
 	if !exist {
@@ -351,6 +360,25 @@ func (sec *ObjectSection) setValue(rv *reflect.Value) error {
 	}
 
 	switch rv.Kind() {
+	case reflect.Ptr:
+		// TODO : ptr have call dump bug to fix
+		return nil
+		switch rv.Type().Elem().Kind() {
+		case reflect.Struct:
+			// TODO
+		case reflect.Map:
+			mv := reflect.MakeMap(rv.Type().Elem())
+			err := sec.setMapValue(&mv)
+			if err != nil {
+				return err
+			}
+
+		default:
+			return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
+
+		}
+
+	//		return sec.setValue(rv.Elem())
 	case reflect.Struct:
 		return sec.setStructValue(rv)
 	case reflect.Map:
@@ -377,7 +405,7 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 	for idx := 0; idx < n; idx++ {
 		vf := rv.Field(idx)
 		tf := rt.Field(idx)
-		tag := tf.Tag.Get("document")
+		tag := tf.Tag.Get("godoc")
 		// if tag empty or "-" ignore
 		if tag == "-" || tag == "omitempty" {
 			continue
@@ -467,6 +495,8 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 	}
 
+	mv := reflect.MakeMap(rv.Type())
+
 	for key, doc := range sec.data {
 		switch doc.Type() {
 		case Object:
@@ -479,42 +509,42 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			if err = child.Unmarshal(&m); err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(m))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(m))
 
 		case Int:
 			d, err := sec.Int(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Int8:
 			d, err := sec.Int8(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Int16:
 			d, err := sec.Int16(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Int32:
 			d, err := sec.Int32(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Int64:
 			d, err := sec.Int64(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Float32:
 			d, err := sec.Float32(key)
@@ -522,28 +552,28 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 				return err
 			}
 
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Float64:
 			d, err := sec.Float64(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case String:
 			d, err := sec.String(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Bool:
 			d, err := sec.Bool(key)
 			if err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(d))
 
 		case Array:
 			d, err := sec.Array(key)
@@ -554,16 +584,18 @@ func (sec *ObjectSection) setMapValue(rv *reflect.Value) error {
 			if err = d.Unmarshal(&arr); err != nil {
 				return err
 			}
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(arr))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(arr))
 
 		case Nil:
 			var v *int = nil
-			rv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(v))
+			mv.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(v))
 
 		default:
-			return ErrorSetValueFail{Type: doc.Type(), KeyName: sec.name, Value: *rv}
+			return ErrorSetValueFail{Type: doc.Type(), KeyName: sec.name, Value: mv}
 		}
 	}
+
+	rv.Set(mv)
 
 	return nil
 }
@@ -574,9 +606,6 @@ func (sec *ObjectSection) Marshal(data interface{}) error {
 	}
 
 	dataVal := reflect.ValueOf(data)
-	if dataVal.IsNil() {
-		return ErrorAcceptNilParam{FunctionName: "ObjectSection.Marshal", NilParam: data}
-	}
 
 	return sec.getValue(dataVal)
 }
@@ -608,7 +637,7 @@ func (sec *ObjectSection) getStructValue(rv reflect.Value) error {
 		vf := rv.Field(idx)
 		tf := rt.Field(idx)
 
-		tag := tf.Tag.Get("document")
+		tag := tf.Tag.Get("godoc")
 		// if tag empty or "-" ignore
 		if tag == "-" || tag == "omitempty" {
 			continue

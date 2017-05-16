@@ -34,6 +34,10 @@ func (sec *BoolSection) SetName(name string) {
 	sec.name = name
 }
 
+func (sec *BoolSection) Copy() *BoolSection {
+	return NewBoolSection(sec.name, sec.data)
+}
+
 func (sec BoolSection) Bool() bool {
 	return sec.data
 }

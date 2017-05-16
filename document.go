@@ -80,6 +80,34 @@ func (doc Document) Name() string {
 	return doc.entity.Name()
 }
 
+func (doc *Document) Copy() *Document {
+	switch {
+	case doc.IsArray():
+		asec, _ := doc.Array()
+		return NewDocument(asec.Copy())
+	case doc.IsBool():
+		bsec, _ := doc.Bool()
+		return NewDocument(bsec.Copy())
+
+	case doc.IsNumber():
+		nsec, _ := doc.Number()
+		return NewDocument(nsec.Copy())
+
+	case doc.IsObject():
+		osec, _ := doc.Object()
+		return NewDocument(osec)
+	case doc.IsString():
+		ssec, _ := doc.String()
+		return NewDocument(ssec.Copy())
+
+	case doc.IsNil():
+		nsec, _ := doc.Nil()
+		return NewDocument(nsec.Copy())
+	}
+
+	return nil
+}
+
 func (doc Document) IsObject() bool {
 	if doc.entity.Type() != Object {
 		return false

@@ -34,6 +34,10 @@ func (sec *NilSection) SetName(name string) {
 	sec.name = name
 }
 
+func (sec *NilSection) Copy() *NilSection {
+	return NewNIlSection(sec.name)
+}
+
 func (sec *NilSection) Unmarshal(data interface{}) error {
 	dataVal := reflect.ValueOf(data)
 	if dataVal.Kind() != reflect.Ptr || dataVal.IsNil() {

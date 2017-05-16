@@ -35,6 +35,10 @@ func (sec *StringSection) SetName(name string) {
 	sec.name = name
 }
 
+func (sec *StringSection) Copy() *StringSection {
+	return NewStringSection(sec.name, sec.data)
+}
+
 func (sec StringSection) String() string {
 	return sec.data
 }

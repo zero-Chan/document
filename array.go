@@ -34,6 +34,14 @@ func (sec *ArraySection) SetName(name string) {
 	sec.name = name
 }
 
+func (sec *ArraySection) Copy() *ArraySection {
+	as := NewArraySection(sec.name)
+	for _, doc := range sec.data {
+		as.AppendDoc(doc.Copy())
+	}
+	return as
+}
+
 func (sec ArraySection) Len() int {
 	return len(sec.data)
 }

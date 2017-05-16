@@ -193,6 +193,18 @@ func (sec *NumberSection) SetName(name string) {
 	sec.name = name
 }
 
+func (sec *NumberSection) Copy() *NumberSection {
+	ns := &NumberSection{
+		name:  sec.name,
+		idata: sec.idata,
+		fdata: sec.fdata,
+		udata: sec.udata,
+		t:     sec.t,
+	}
+
+	return ns
+}
+
 func (sec NumberSection) Int() int {
 	v := int(sec.idata)
 	switch sec.Type() {
