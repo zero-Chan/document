@@ -88,18 +88,15 @@ func (doc *Document) Copy() *Document {
 	case doc.IsBool():
 		bsec, _ := doc.Bool()
 		return NewDocument(bsec.Copy())
-
 	case doc.IsNumber():
 		nsec, _ := doc.Number()
 		return NewDocument(nsec.Copy())
-
 	case doc.IsObject():
 		osec, _ := doc.Object()
-		return NewDocument(osec)
+		return NewDocument(osec.Copy())
 	case doc.IsString():
 		ssec, _ := doc.String()
 		return NewDocument(ssec.Copy())
-
 	case doc.IsNil():
 		nsec, _ := doc.Nil()
 		return NewDocument(nsec.Copy())

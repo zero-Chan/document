@@ -1,6 +1,7 @@
 package transcoder
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -31,28 +32,19 @@ func NewJsonTransCoder() *JsonTransCoder {
 // Unmarshal: make []byte -> doc
 // []byte -> interface{} 		[ json.unmarshal ]
 // interface{} -> doc	[ doc.marshal ]
-func (coder *JsonTransCoder) Unmarshal(data []byte, v interface{}) (*godoc.Document, error) {
-	err := json.Unmarshal(data, v)
+func (coder *JsonTransCoder) Unmarshal(data []byte) (*godoc.Document, error) {
+	var v interface{}
+	dec := json.NewDecoder(bytes.NewReader(data))
+
+	err := dec.Decode(&v)
 	if err != nil {
 		return nil, err
 	}
 
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return nil, fmt.Errorf("non-pointer(%s)", rv.Type().String())
-	}
-
-	vv := rv.Elem()
+	vv := reflect.ValueOf(v)
 	switch vv.Kind() {
 	case reflect.Map:
-		objSec := godoc.NewObjectSection("")
-		err := objSec.Marshal(vv.Interface())
-		if err != nil {
-			return nil, err
-		}
-
-		return godoc.NewDocument(objSec), nil
-
+		fallthrough
 	case reflect.Struct:
 		objSec := godoc.NewObjectSection("")
 		err := objSec.Marshal(vv.Interface())
@@ -62,31 +54,67 @@ func (coder *JsonTransCoder) Unmarshal(data []byte, v interface{}) (*godoc.Docum
 
 		return godoc.NewDocument(objSec), nil
 
+	case reflect.Slice:
+		fallthrough
 	case reflect.Array:
 		arrSec := godoc.NewArraySection("")
 		err := arrSec.Marshal(vv.Interface())
 		if err != nil {
 			return nil, err
 		}
+		return godoc.NewDocument(arrSec), nil
 
 	case reflect.String:
 		strSec := godoc.NewStringSection("", vv.String())
-		err := strSec.Marshal(vv.String())
-		if err != nil {
-			return nil, err
-		}
 		return godoc.NewDocument(strSec), nil
 
 	case reflect.Bool:
 		bSec := godoc.NewBoolSection("", vv.Bool())
-		err := bSec.Marshal(vv.Bool())
-		if err != nil {
-			return nil, err
-		}
 		return godoc.NewDocument(bSec), nil
 
+	case reflect.Invalid:
+		nilSec := godoc.NewNIlSection("")
+		return godoc.NewDocument(nilSec), nil
+
+	case reflect.Int:
+		nSec := godoc.NewIntSection("", int(vv.Int()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Int8:
+		nSec := godoc.NewInt8Section("", int8(vv.Int()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Int16:
+		nSec := godoc.NewInt16Section("", int16(vv.Int()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Int32:
+		nSec := godoc.NewInt32Section("", int32(vv.Int()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Int64:
+		nSec := godoc.NewInt64Section("", vv.Int())
+		return godoc.NewDocument(nSec), nil
+	case reflect.Uint:
+		nSec := godoc.NewUintSection("", uint(vv.Uint()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Uint8:
+		nSec := godoc.NewUint8Section("", uint8(vv.Uint()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Uint16:
+		nSec := godoc.NewUint16Section("", uint16(vv.Uint()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Uint32:
+		nSec := godoc.NewUint32Section("", uint32(vv.Uint()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Uint64:
+		nSec := godoc.NewUint64Section("", vv.Uint())
+		return godoc.NewDocument(nSec), nil
+	case reflect.Float32:
+		nSec := godoc.NewFloat32Section("", float32(vv.Float()))
+		return godoc.NewDocument(nSec), nil
+	case reflect.Float64:
+		nSec := godoc.NewFloat64Section("", vv.Float())
+		return godoc.NewDocument(nSec), nil
+
 	default:
-		return nil, fmt.Errorf("JsonTranCoder not support Unmarshal type[%s]", rv.Kind().String())
+		return nil, fmt.Errorf("JsonTranCoder not support Unmarshal type[%s]", vv.Kind().String())
 	}
 
 	return godoc.NewDocument(godoc.NewNIlSection("")), nil
@@ -99,6 +127,14 @@ func (coder *JsonTransCoder) Marshal(doc godoc.Document) ([]byte, error) {
 	var v interface{}
 
 	switch doc.Type() {
+	case godoc.Bool:
+		bSec, err := doc.Bool()
+		if err != nil {
+			return nil, err
+		}
+
+		v = bSec.Bool()
+
 	case godoc.Object:
 		objSec, err := doc.Object()
 		if err != nil {
@@ -137,19 +173,6 @@ func (coder *JsonTransCoder) Marshal(doc godoc.Document) ([]byte, error) {
 		}
 
 		v = strv
-
-	case godoc.Bool:
-		bSec, err := doc.Bool()
-		if err != nil {
-			return nil, err
-		}
-
-		var boolv bool
-		if err = bSec.Unmarshal(&boolv); err != nil {
-			return nil, err
-		}
-
-		v = boolv
 
 	case godoc.Nil:
 		nilSec, err := doc.Nil()

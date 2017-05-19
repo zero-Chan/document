@@ -294,8 +294,6 @@ func TestObjectSectionUnmarshalStruct(t *testing.T) {
 		t.Errorf("Int type Get Invalid value. invalidValue[%d]. value[%d]", bufs.ObjectKey2.Int, 30)
 		t.FailNow()
 	}
-
-	// TODO : fix ptr type will core dump bug.
 }
 
 func TestObjectSectionMarshalMap(t *testing.T) {
@@ -489,6 +487,4 @@ func TestObjectSectionMarshalStruct(t *testing.T) {
 		t.Errorf("ChildInt Get Invalid value. invalidValue[%d]. value[%d]", v, 20)
 		t.FailNow()
 	}
-
-	// TODO get ptr value is not allow now
 }

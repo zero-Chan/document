@@ -361,11 +361,16 @@ func (sec *ObjectSection) setValue(rv *reflect.Value) error {
 
 	switch rv.Kind() {
 	case reflect.Ptr:
-		// TODO : ptr have call dump bug to fix
-		return nil
 		switch rv.Type().Elem().Kind() {
 		case reflect.Struct:
-			// TODO
+			sv := reflect.New(rv.Type().Elem())
+			sve := sv.Elem()
+			err := sec.setStructValue(&sve)
+			if err != nil {
+				return err
+			}
+			rv.Set(sv)
+
 		case reflect.Map:
 			mv := reflect.MakeMap(rv.Type().Elem())
 			err := sec.setMapValue(&mv)
@@ -378,7 +383,6 @@ func (sec *ObjectSection) setValue(rv *reflect.Value) error {
 
 		}
 
-	//		return sec.setValue(rv.Elem())
 	case reflect.Struct:
 		return sec.setStructValue(rv)
 	case reflect.Map:
@@ -413,6 +417,14 @@ func (sec *ObjectSection) setStructValue(rv *reflect.Value) error {
 
 		if len(tag) == 0 {
 			tag = tf.Name
+		}
+
+		if tf.Anonymous {
+			err := sec.setStructValue(&vf)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		doc, exist := sec.data[tag]
@@ -647,6 +659,14 @@ func (sec *ObjectSection) getStructValue(rv reflect.Value) error {
 			tag = tf.Name
 		}
 
+		if tf.Anonymous {
+			err := sec.getStructValue(vf)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		if err := sec.get(tag, vf); err != nil {
 			return err
 		}
@@ -727,6 +747,9 @@ func (sec *ObjectSection) get(key string, rv reflect.Value) error {
 
 	case reflect.Invalid:
 		sec.SetNil(key)
+
+	case reflect.Ptr:
+		return sec.get(key, rv.Elem())
 
 	default:
 		return ErrorGetValueFail{Type: Object, InvalidKind: rv.Kind(), ValidKind: reflect.Interface}
