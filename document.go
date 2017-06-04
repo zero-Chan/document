@@ -16,6 +16,7 @@ var typeString = []string{
 	"Int64",
 	"Float32",
 	"Float64",
+	"Time",
 }
 
 func (t Type) String() string {
@@ -41,6 +42,7 @@ const (
 	Uint16
 	Uint32
 	Uint64
+	Time
 )
 
 type Section interface {
@@ -263,6 +265,14 @@ func (doc Document) IsNil() bool {
 	return true
 }
 
+func (doc Document) IsTime() bool {
+	if doc.entity.Type() != Time {
+		return false
+	}
+
+	return true
+}
+
 func (doc *Document) Object() (*ObjectSection, error) {
 	if !doc.IsObject() {
 		return nil, ErrorInvalidSectionTypeConvert{ErrorType: doc.Type(), Type: Object}
@@ -336,6 +346,19 @@ func (doc *Document) Nil() (*NilSection, error) {
 	sec, ok := doc.entity.(*NilSection)
 	if !ok {
 		return nil, ErrorSection2Entity{SectionType: doc.Type(), ConvertEntity: "*NilSection"}
+	}
+
+	return sec, nil
+}
+
+func (doc *Document) Time() (*TimeSection, error) {
+	if !doc.IsTime() {
+		return nil, ErrorInvalidSectionTypeConvert{ErrorType: doc.Type(), Type: Nil}
+	}
+
+	sec, ok := doc.entity.(*TimeSection)
+	if !ok {
+		return nil, ErrorSection2Entity{SectionType: doc.Type(), ConvertEntity: "*TimeSection"}
 	}
 
 	return sec, nil
