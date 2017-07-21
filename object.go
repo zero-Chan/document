@@ -110,6 +110,23 @@ func (sec *ObjectSection) SetObject(key string, val *ObjectSection) {
 	val.SetName(key)
 }
 
+// we should use this method when make sure this key-value is Object type or this key not exist.
+func (sec *ObjectSection) ObjectAt(key string) *ObjectSection {
+	doc, exist := sec.data[key]
+	if !exist {
+		sec.data[key] = NewDocument(NewObjectSection(key))
+		doc = sec.data[key]
+	}
+
+	objSec, err := doc.Object()
+	if err != nil {
+		panic("Use ObjectAt Method fail: " + err.Error())
+		return nil
+	}
+
+	return objSec
+}
+
 func (o *ObjectSection) Int(key string) (int, error) {
 	v, exist := o.data[key]
 	if !exist {
@@ -347,6 +364,7 @@ func (sec *ObjectSection) Unmarshal(data interface{}) error {
 	}
 
 	rv := dataVal.Elem()
+
 	return sec.setValue(&rv)
 }
 
@@ -378,6 +396,16 @@ func (sec *ObjectSection) setValue(rv *reflect.Value) error {
 				return err
 			}
 
+		case reflect.Interface:
+			m := make(map[string]interface{})
+			mv := reflect.ValueOf(&m)
+			mve := mv.Elem()
+			err := sec.setMapValue(&mve)
+			if err != nil {
+				return err
+			}
+			rv.Set(mv)
+
 		default:
 			return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 
@@ -387,6 +415,17 @@ func (sec *ObjectSection) setValue(rv *reflect.Value) error {
 		return sec.setStructValue(rv)
 	case reflect.Map:
 		return sec.setMapValue(rv)
+
+	case reflect.Interface:
+		m := make(map[string]interface{})
+		mv := reflect.ValueOf(&m)
+		mve := mv.Elem()
+		err := sec.setMapValue(&mve)
+		if err != nil {
+			return err
+		}
+		rv.Set(mv)
+
 	default:
 		return ErrorSetValueFail{Type: Object, KeyName: sec.name, Value: *rv}
 	}

@@ -421,6 +421,16 @@ func (sec *ArraySection) setValue(rv *reflect.Value) error {
 		return sec.setSliceValue(rv)
 	case reflect.Array:
 		return sec.setArrayValue(rv)
+	case reflect.Interface:
+		arr := make([]interface{}, sec.Len())
+		arrv := reflect.ValueOf(&arr)
+		arrve := arrv.Elem()
+
+		err := sec.setSliceValue(&arrve)
+		if err != nil {
+			return err
+		}
+		rv.Set(arrv)
 	default:
 		return ErrorSetValueFail{Type: Array, KeyName: sec.name, Value: *rv}
 	}
@@ -539,7 +549,7 @@ func (sec *ArraySection) set(doc *Document, rv *reflect.Value) error {
 			return err
 		}
 
-		if err = arrSec.setArrayValue(rv); err != nil {
+		if err = arrSec.setValue(rv); err != nil {
 			return err
 		}
 
@@ -606,6 +616,7 @@ func (sec *ArraySection) getArrayValue(rv reflect.Value) error {
 }
 
 func (sec *ArraySection) get(rv reflect.Value) error {
+
 	switch rv.Kind() {
 	case reflect.String:
 		sec.AppendString(rv.String())
@@ -647,6 +658,8 @@ func (sec *ArraySection) get(rv reflect.Value) error {
 	case reflect.Bool:
 		sec.AppendBool(rv.Bool())
 
+	case reflect.Slice:
+		fallthrough
 	case reflect.Array:
 		arr := NewArraySection("")
 		if err := arr.getValue(rv); err != nil {
